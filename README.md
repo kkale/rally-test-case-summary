@@ -1,22 +1,20 @@
-rally-test-case-status
+rally-test-case-summary
 =========================
 
 ## Overview
-A Rally app designed to report information regarding the status of test cases for the current iteration.  
+A Rally app designed to report information regarding the status of test cases of an iteration.
 
-![Sample App Image](https://raw.githubusercontent.com/xpanxion/rally-test-case-status/master/img/sample_img.png)
+The application works by performing the following steps:
 
-The application works by performing the following steps:  
-
-1. Inspects ALL **User Stories** (or **Functional Areas**) for the current **Project** and **Iteration**.  
-2. Inspects ALL **Test Cases** assigned under each of the **User Stories** from step #1.  
-3. Sets column **Planned** as number of **Test Cases** found under each **User Story**.  
-4. Sets column **Actual** as the number of **Test Cases** found under each **User Story** that has been **executed** at least once. (Does not inspect pass or fail status).  
-5. Performs calculations for **Percentage Complete**.  
-6. Sets a text **Status** based on **Percentage Complete**.  
-<= 0% - Not Started  
-> 0% - In Progress  
-= 100% - Complete  
+1. Inspects ALL **User Stories** (or **Functional Areas**) for the current **Project** and **Iteration**.
+2. Inspects ALL **Test Cases** assigned under each of the **User Stories** from step #1.
+3. Sets column **Planned** as number of **Test Cases** found under each **User Story**.
+4. Sets column **Actual** as the number of **Test Cases** found under each **User Story** that has been **executed** at least once. (Does not inspect pass or fail status).
+5. Performs calculations for **Percentage Complete**.
+6. Sets a text **Status** based on **Percentage Complete**.
+<= 0% - Not Started
+> 0% - In Progress
+= 100% - Complete
 
 ## License
 
