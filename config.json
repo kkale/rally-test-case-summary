@@ -1,0 +1,12 @@
+{
+   "name": "test-case-status",
+   "className": "test-case-status",
+   "server": "https://rally1.rallydev.com",
+   "sdk": "2.0",
+   "javascript": [
+      "App.js"
+   ],
+   "css": [
+      "app.css"
+   ]
+}

@@ -1,0 +1,15 @@
+.app {
+     /* Add app styles here */
+}
+
+tr.x-grid-row.not_started > td {
+	background-color: #FFD4D4;
+}
+
+tr.x-grid-row.complete > td {
+	background-color: #D0FFD0;
+}
+
+tr.x-grid-row.in_progress > td {
+	background-color: #FFFFBD;
+}
