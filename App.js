@@ -70,6 +70,7 @@ Ext.define('test-case-status', {
         this._statusDataStore.removeAll();
 
         var that = this;
+        that.all_tests = [];
         Ext.create('Rally.data.wsapi.Store', {
             model: 'UserStory',
             fetch: ['Name', 'TestCaseCount', 'TestCases'],
@@ -79,8 +80,9 @@ Ext.define('test-case-status', {
                 load: function(store, userStories) {
                     for(var x in userStories) {
                         var userStory = userStories[x];
-                        that._loadTestCases(userStory);
+                        that.all_tests = that.all_tests.concat(that._loadTestCases(userStory, that));
                     }
+                    console.log(that.all_tests);
                     that._calcTestStats();
                 }
             }
@@ -134,16 +136,11 @@ Ext.define('test-case-status', {
         }));
     },
 
-    _loadTestCases : function(userStory) {
-        var that = this;
+    _loadTestCases : function(userStory, that) {
         userStory.getCollection('TestCases').load({
-            fetch: ['LastRun'],
+            fetch: true,
             callback: function(testCases, operation, success) {
-                if (that.all_tests === undefined) {
-                    that.all_tests = testCases;
-                } else {
-                    that.all_tests = that.all_tests.concat(testCases);
-                }
+                return testCases;
             }
         });
     },
