@@ -80,7 +80,7 @@ Ext.define('test-case-status', {
                 load: function(store, userStories) {
                     for(var x in userStories) {
                         var userStory = userStories[x];
-                        that.all_tests = that.all_tests.concat(that._loadTestCases(userStory, that));
+                        that._loadTestCases(userStory, that);
                     }
                     console.log(that.all_tests);
                     that._calcTestStats();
@@ -132,7 +132,7 @@ Ext.define('test-case-status', {
         this._statusTotalsDataStore.add(Ext.create('TableDataObject', {
             type : '-',
             count : this.all_tests.length,
-            percent : 0.0
+            percentage : 0.0
         }));
     },
 
@@ -140,16 +140,17 @@ Ext.define('test-case-status', {
         userStory.getCollection('TestCases').load({
             fetch: true,
             callback: function(testCases, operation, success) {
-                return testCases;
+                that.all_tests = that.all_tests.concat(testCases);
             }
         });
+        return;
     },
 
     _getTableRowItem : function(type, count, percent) {
         return Ext.create('TableDataObject', {
             type : type,
             count: count,
-            percent : percent
+            percentage : percent
         });
     },
 
