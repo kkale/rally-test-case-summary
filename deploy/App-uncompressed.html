@@ -25,11 +25,9 @@
         Ext.define('TableDataObject', {
             extend: 'Ext.data.Model',
             fields: [
-                {name: 'userStoryName', type: 'string'},
-                {name: 'numberOfTestsPlanned', type: 'int'},
-                {name: 'numberOfTestsRan', type: 'int'},
-                {name: 'percentComplete', type: 'string'},
-                {name: 'testExecutionStatus', type: 'string'}
+                {name: 'type', type: 'string'},
+                {name: 'count', type: 'int'},
+                {name: 'percentage', type: 'double'}
             ]
         });
 
@@ -64,24 +62,11 @@
             title: title,
             store: dataStore,
             columns: [
-                { text: 'Functional Area',  dataIndex: 'userStoryName' },
-                { text: 'Planned', dataIndex: 'numberOfTestsPlanned'},
-                { text: 'Actual', dataIndex: 'numberOfTestsRan' },
-                { text: '% Complete', dataIndex: 'percentComplete' },
-                { text: 'Status', dataIndex: 'testExecutionStatus', tdCls: 'testStatus', flex: 1 }
-            ],
-            viewConfig: {
-                getRowClass: function(record, index, rowParams, store) {
-                    status = record.get('testExecutionStatus');
-                    switch(status) {
-                        case 'In Progress': return 'in_progress';
-                        case 'Not Started': return 'not_started';
-                        case 'Complete': return 'complete';
-                        default: return '';
-                    }
-                }
-            }
-        }));
+                { text: 'Last Verdict',  dataIndex: 'type' },
+                { text: 'Count', dataIndex: 'count' },
+                { text: 'Percentage', dataIndex : 'percentage' }
+            ]
+            }));
     },
 
     _onIterationComboboxLoad : function() {
@@ -94,6 +79,7 @@
         this._statusDataStore.removeAll();
 
         var that = this;
+        that.all_tests = [];
         Ext.create('Rally.data.wsapi.Store', {
             model: 'UserStory',
             fetch: ['Name', 'TestCaseCount', 'TestCases'],
@@ -103,59 +89,89 @@
                 load: function(store, userStories) {
                     for(var x in userStories) {
                         var userStory = userStories[x];
-                        that._loadTestCases(userStory);
+                        that._loadTestCases(userStory, that);
                     }
                 }
             }
         });
     },
 
+    _calcTestStats : function(tests) {
+        if (this.all_tests === undefined) {
+            this.all_tests = tests;
+        } else {
+            this.all_tests = this.all_tests.concat(tests);
+        }
+
+        if (this.all_tests === undefined) {
+            console.log("Error no tests found.");
+            return;
+        }
+        test_count = this.all_tests.length;
+
+        // Type, Count, Percent.
+        stats = [["Blocked", 0, 0.0],
+                 ["Error", 0, 0.0],
+                 ["Fail", 0, 0.0],
+                 ["Inconclusive", 0, 0.0],
+                 ["", 0, 0.0],
+                 ["Pass", 0, 0.0]];
+
+        // Loop through all the tests and update counts
+        for (var i = 0;i < test_count; i++) {
+            for(var j = 0; j < stats.length; j++) {
+                if (this.all_tests[i].get("LastVerdict") === stats[j][0]) {
+                    stats[j][1]++;
+                }
+            }
+        }
+
+        // Percent
+        if (test_count !== 0) {
+            for(i = 0; i < stats.length; i++) {
+                percent = stats[i][1] / test_count;
+                stats[i][2] = Math.floor(percent * 10000) / 100;
+            }
+        }
+
+        // Add current status to table
+        this._statusDataStore.removeAll();
+        for(i = 0; i < stats.length; i++) {
+            if (stats[i][0] === "") {
+                stats[i][0] = "None Found";
+            }
+            tableRowItem = this._getTableRowItem(stats[i][0], stats[i][1], stats[i][2]);
+            this._statusDataStore.add(tableRowItem);
+            this._refreshStatusTotalsTable();
+        }
+    },
+
     _refreshStatusTotalsTable : function() {
         this._statusTotalsDataStore.removeAll();
 
-        var totalNumberOfTestsPlanned = 0;
-        var totalNumberOfTestsRan = 0;
-
-        for(var x in this._statusDataStore.data.items) {
-            var row = this._statusDataStore.data.items[x].data;
-            totalNumberOfTestsPlanned += row.numberOfTestsPlanned;
-            totalNumberOfTestsRan += row.numberOfTestsRan;
-            }
-
         this._statusTotalsDataStore.add(Ext.create('TableDataObject', {
-            userStoryName : '-',
-            numberOfTestsPlanned : totalNumberOfTestsPlanned,
-            numberOfTestsRan : totalNumberOfTestsRan,
-            percentComplete : this._getPercentComplete(totalNumberOfTestsPlanned, totalNumberOfTestsRan),
-            testExecutionStatus : this._getTestExecutionStatus(totalNumberOfTestsPlanned, totalNumberOfTestsRan)
+            type : '-',
+            count : test_count,
+            percentage : 100.00
         }));
     },
 
-    _loadTestCases : function(userStory) {
-        var that = this;
+    _loadTestCases : function(userStory, that) {
         userStory.getCollection('TestCases').load({
-            fetch: ['LastRun'],
+            // don't forget to trim this fetch:
+            fetch: ['LastVerdict'],
             callback: function(testCases, operation, success) {
-                var tableRowItem = that._getTableRowItem(userStory, testCases);
-                that._statusDataStore.add(tableRowItem);
-                that._refreshStatusTotalsTable();
+                that._calcTestStats(testCases);
             }
         });
+        return;
     },
 
-    _getTableRowItem : function(userStory, testCases) {
-        var userStoryName = userStory.get('Name');
-        var numberOfTestsPlanned = parseInt(userStory.get('TestCaseCount'), 10);
-        var numberOfTestsRan = this._getNumberOfTestsRan(testCases);
-        var percentComplete = this._getPercentComplete(numberOfTestsPlanned, numberOfTestsRan);
-        var testExecutionStatus = this._getTestExecutionStatus(numberOfTestsPlanned, numberOfTestsRan);
-
+    _getTableRowItem : function(type, count, percent) {
         return Ext.create('TableDataObject', {
-            userStoryName : userStoryName,
-            numberOfTestsPlanned : numberOfTestsPlanned,
-            numberOfTestsRan : numberOfTestsRan,
-            percentComplete : percentComplete,
-            testExecutionStatus : testExecutionStatus
+            type : type,
+            count: count,
+            percentage : percent
         });
     },
 

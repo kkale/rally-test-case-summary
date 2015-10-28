@@ -53,7 +53,7 @@ Ext.define('test-case-status', {
             title: title,
             store: dataStore,
             columns: [
-                { text: 'Type',  dataIndex: 'type' },
+                { text: 'Last Verdict',  dataIndex: 'type' },
                 { text: 'Count', dataIndex: 'count' },
                 { text: 'Percentage', dataIndex : 'percentage' }
             ]
@@ -82,7 +82,6 @@ Ext.define('test-case-status', {
                         var userStory = userStories[x];
                         that._loadTestCases(userStory, that);
                     }
-                    console.log(that.all_tests);
                 }
             }
         });
@@ -95,20 +94,22 @@ Ext.define('test-case-status', {
             this.all_tests = this.all_tests.concat(tests);
         }
 
-        if (this.all_tests === undefined || this.all_tests.length === 0) {
+        if (this.all_tests === undefined) {
             console.log("Error no tests found.");
             return;
         }
+        test_count = this.all_tests.length;
 
         // Type, Count, Percent.
         stats = [["Blocked", 0, 0.0],
                  ["Error", 0, 0.0],
                  ["Fail", 0, 0.0],
                  ["Inconclusive", 0, 0.0],
+                 ["", 0, 0.0],
                  ["Pass", 0, 0.0]];
 
         // Loop through all the tests and update counts
-        for (var i = 0;i < this.all_tests.length; i++) {
+        for (var i = 0;i < test_count; i++) {
             for(var j = 0; j < stats.length; j++) {
                 if (this.all_tests[i].get("LastVerdict") === stats[j][0]) {
                     stats[j][1]++;
@@ -117,15 +118,20 @@ Ext.define('test-case-status', {
         }
 
         // Percent
-        total = this.all_tests.length;
-        for(i = 0; i < stats.length; i++) {
-                stats[i][2] = stats[i][1] / total;
+        if (test_count !== 0) {
+            for(i = 0; i < stats.length; i++) {
+                percent = stats[i][1] / test_count;
+                stats[i][2] = Math.floor(percent * 10000) / 100;
+            }
         }
 
-        // Add these all to the table:
+        // Add current status to table
+        this._statusDataStore.removeAll();
         for(i = 0; i < stats.length; i++) {
+            if (stats[i][0] === "") {
+                stats[i][0] = "None Found";
+            }
             tableRowItem = this._getTableRowItem(stats[i][0], stats[i][1], stats[i][2]);
-            this._statusDataStore.removeAll();
             this._statusDataStore.add(tableRowItem);
             this._refreshStatusTotalsTable();
         }
@@ -136,15 +142,15 @@ Ext.define('test-case-status', {
 
         this._statusTotalsDataStore.add(Ext.create('TableDataObject', {
             type : '-',
-            count : this.all_tests.length,
-            percentage : 0.0
+            count : test_count,
+            percentage : 100.00
         }));
     },
 
     _loadTestCases : function(userStory, that) {
         userStory.getCollection('TestCases').load({
             // don't forget to trim this fetch:
-            fetch: true,
+            fetch: ['LastVerdict'],
             callback: function(testCases, operation, success) {
                 that._calcTestStats(testCases);
             }
