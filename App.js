@@ -83,15 +83,19 @@ Ext.define('test-case-status', {
                         that._loadTestCases(userStory, that);
                     }
                     console.log(that.all_tests);
-                    that._calcTestStats();
                 }
             }
         });
     },
 
-    _calcTestStats : function() {
-
+    _calcTestStats : function(tests) {
         if (this.all_tests === undefined) {
+            this.all_tests = tests;
+        } else {
+            this.all_tests = this.all_tests.concat(tests);
+        }
+
+        if (this.all_tests === undefined || this.all_tests.length === 0) {
             console.log("Error no tests found.");
             return;
         }
@@ -107,7 +111,7 @@ Ext.define('test-case-status', {
         for (var i = 0;i < this.all_tests.length; i++) {
             for(var j = 0; j < stats.length; j++) {
                 if (this.all_tests[i].get("LastVerdict") === stats[j][0]) {
-                    stats[i][1]++;
+                    stats[j][1]++;
                 }
             }
         }
@@ -121,6 +125,7 @@ Ext.define('test-case-status', {
         // Add these all to the table:
         for(i = 0; i < stats.length; i++) {
             tableRowItem = this._getTableRowItem(stats[i][0], stats[i][1], stats[i][2]);
+            this._statusDataStore.removeAll();
             this._statusDataStore.add(tableRowItem);
             this._refreshStatusTotalsTable();
         }
@@ -138,9 +143,10 @@ Ext.define('test-case-status', {
 
     _loadTestCases : function(userStory, that) {
         userStory.getCollection('TestCases').load({
+            // don't forget to trim this fetch:
             fetch: true,
             callback: function(testCases, operation, success) {
-                that.all_tests = that.all_tests.concat(testCases);
+                that._calcTestStats(testCases);
             }
         });
         return;
