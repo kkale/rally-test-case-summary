@@ -68,6 +68,7 @@ Ext.define('test-case-status', {
 
         // Reset the table data stores
         this._statusDataStore.removeAll();
+        this._refreshStatusTotalsTable(0);
 
         var that = this;
         that.all_tests = [];
@@ -98,46 +99,35 @@ Ext.define('test-case-status', {
             console.log("Error no tests found.");
             return;
         }
-        test_count = this.all_tests.length;
 
-        // Type, Count, Percent.
-        stats = [["Blocked", 0, 0.0],
-                 ["Error", 0, 0.0],
-                 ["Fail", 0, 0.0],
-                 ["Inconclusive", 0, 0.0],
-                 ["", 0, 0.0],
-                 ["Pass", 0, 0.0]];
+        var test_count = this.all_tests.length;
 
         // Loop through all the tests and update counts
+        var dict = {};
         for (var i = 0;i < test_count; i++) {
-            for(var j = 0; j < stats.length; j++) {
-                if (this.all_tests[i].get("LastVerdict") === stats[j][0]) {
-                    stats[j][1]++;
-                }
+            verdict = this.all_tests[i].get("LastVerdict");
+            verdict = (verdict === "" ? "None" : verdict);
+
+            // have we seen it?
+            if (!dict.hasOwnProperty(verdict)) {
+                dict[verdict] = [0, 0.0];
             }
+
+            dict[verdict][0]++;
         }
 
         // Percent
-        if (test_count !== 0) {
-            for(i = 0; i < stats.length; i++) {
-                percent = stats[i][1] / test_count;
-                stats[i][2] = Math.floor(percent * 10000) / 100;
-            }
-        }
-
-        // Add current status to table
         this._statusDataStore.removeAll();
-        for(i = 0; i < stats.length; i++) {
-            if (stats[i][0] === "") {
-                stats[i][0] = "None Found";
-            }
-            tableRowItem = this._getTableRowItem(stats[i][0], stats[i][1], stats[i][2]);
+        for (var key in dict) {
+            percent = dict[key][0] / test_count;
+            dict[key][1] = Math.floor(percent * 10000) / 100;
+            tableRowItem = this._getTableRowItem(key, dict[key][0], dict[key][1]);
             this._statusDataStore.add(tableRowItem);
-            this._refreshStatusTotalsTable();
         }
+        this._refreshStatusTotalsTable(test_count);
     },
 
-    _refreshStatusTotalsTable : function() {
+    _refreshStatusTotalsTable : function(test_count) {
         this._statusTotalsDataStore.removeAll();
 
         this._statusTotalsDataStore.add(Ext.create('TableDataObject', {
