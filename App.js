@@ -125,6 +125,63 @@ Ext.define('test-case-status', {
             this._statusDataStore.add(tableRowItem);
         }
         this._refreshStatusTotalsTable(test_count);
+
+        // Pie chart data:
+        var series = [
+        {
+            type: 'pie',
+            name: 'Pie Chart',
+            data: []
+        }];
+
+        // Add the data:
+        for (key in dict) {
+            series.data.push({
+                name: key,
+                y: dict[key].length,
+                // idea - color dict?
+                color: '#ffffff'
+            });
+        }
+
+        // Make the chart:
+        // todo: find a good placement:
+        var div = Ext.ComponentQuery.query('#child1')[0];
+        this._createChart(series, div);
+    },
+
+    // from https://github.com/nmusaelian-rally/two-pie-charts
+    // MIT license
+    _createChart: function (series,div) {
+        div.add({
+            xtype: 'rallychart',
+            chartConfig: {
+                chart: {
+                    plotBackgroundColor: null,
+                    plotBorderWidth: null,
+                    plotShadow: false
+                },
+                title: {
+                    text: 'Release Features'
+                },
+                tooltip: {
+                    pointFormat: '{series.name}: <b>{point.y}</b>'
+                },
+                plotOptions: {
+                    pie: {
+                        allowPointSelect: false,
+                        cursor: 'pointer',
+                        dataLabels: {
+                            enabled: false
+                        },
+                        showInLegend: true
+                    }
+                }
+            },
+            chartData: {
+                series: series
+            }
+        });
     },
 
     _refreshStatusTotalsTable : function(test_count) {
