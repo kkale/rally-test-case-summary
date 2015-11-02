@@ -4,13 +4,16 @@ Ext.define('test-case-status', {
     launch: function() {
 
         this.iterationCombobox = this.add({
-            xtype: 'rallyiterationcombobox',
+            xtype: 'rallyfieldvaluecombobox',
+            model: 'testCase',
+            field: 'c_WorkdayTestCycle',
             listeners: {
                 ready: this._onIterationComboboxLoad,
                 select: this._onIterationComboboxLoad,
                 scope: this
             }
         });
+
 
         // Defines the model object we will be using for our table data store object.
         Ext.define('TableDataObject', {
@@ -61,7 +64,7 @@ Ext.define('test-case-status', {
     },
 
     _onIterationComboboxLoad : function() {
-        this._loadTableData([this.iterationCombobox.getQueryFromSelected()]);
+        this._loadTableData([this.iterationCombobox.value]);
     },
 
     _loadTableData : function(filters) {
@@ -76,19 +79,18 @@ Ext.define('test-case-status', {
             model: 'UserStory',
             fetch: ['Name', 'TestCaseCount', 'TestCases'],
             autoLoad: true,
-            filters: filters,
             listeners: {
                 load: function(store, userStories) {
                     for(var x in userStories) {
                         var userStory = userStories[x];
-                        that._loadTestCases(userStory, that);
+                        that._loadTestCases(userStory, filters, that);
                     }
                 }
             }
         });
     },
 
-    _calcTestStats : function(tests) {
+    _calcTestStats : function(tests, filters) {
         if (this.all_tests === undefined) {
             this.all_tests = tests;
         } else {
@@ -104,84 +106,32 @@ Ext.define('test-case-status', {
 
         // Loop through all the tests and update counts
         var dict = {};
+        var valid_count = 0;
         for (var i = 0;i < test_count; i++) {
-            verdict = this.all_tests[i].get("LastVerdict");
-            verdict = (verdict === "" ? "None" : verdict);
+            var field = this.all_tests[i].get('c_WorkdayTestCycle');
+            if (field === filters.toString()) {
+                valid_count++;
+                verdict = this.all_tests[i].get("LastVerdict");
+                verdict = (verdict === "" ? "None" : verdict);
 
-            // have we seen it?
-            if (!dict.hasOwnProperty(verdict)) {
-                dict[verdict] = [0, 0.0];
+                // have we seen it?
+                if (!dict.hasOwnProperty(verdict)) {
+                    dict[verdict] = [0, 0.0];
+                }
+
+                dict[verdict][0]++;
             }
-
-            dict[verdict][0]++;
         }
 
         // Percent
         this._statusDataStore.removeAll();
         for (var key in dict) {
-            percent = dict[key][0] / test_count;
+            percent = dict[key][0] / valid_count;
             dict[key][1] = Math.floor(percent * 10000) / 100;
             tableRowItem = this._getTableRowItem(key, dict[key][0], dict[key][1]);
             this._statusDataStore.add(tableRowItem);
         }
-        this._refreshStatusTotalsTable(test_count);
-
-        // Pie chart data:
-        var series = [
-        {
-            type: 'pie',
-            name: 'Pie Chart',
-            data: []
-        }];
-
-        // Add the data:
-        for (key in dict) {
-            series.data.push({
-                name: key,
-                y: dict[key].length,
-                // idea - color dict?
-                color: '#ffffff'
-            });
-        }
-
-        // Make the chart:
-        // todo: find a good placement:
-        var div = Ext.ComponentQuery.query('#child1')[0];
-        this._createChart(series, div);
-    },
-
-    // from https://github.com/nmusaelian-rally/two-pie-charts
-    // MIT license
-    _createChart: function (series,div) {
-        div.add({
-            xtype: 'rallychart',
-            chartConfig: {
-                chart: {
-                    plotBackgroundColor: null,
-                    plotBorderWidth: null,
-                    plotShadow: false
-                },
-                title: {
-                    text: 'Release Features'
-                },
-                tooltip: {
-                    pointFormat: '{series.name}: <b>{point.y}</b>'
-                },
-                plotOptions: {
-                    pie: {
-                        allowPointSelect: false,
-                        cursor: 'pointer',
-                        dataLabels: {
-                            enabled: false
-                        },
-                        showInLegend: true
-                    }
-                }
-            },
-            chartData: {
-                series: series
-            }
-        });
+        this._refreshStatusTotalsTable(valid_count);
     },
 
     _refreshStatusTotalsTable : function(test_count) {
@@ -194,12 +144,11 @@ Ext.define('test-case-status', {
         }));
     },
 
-    _loadTestCases : function(userStory, that) {
+    _loadTestCases : function(userStory, filters, that) {
         userStory.getCollection('TestCases').load({
-            // don't forget to trim this fetch:
-            fetch: ['LastVerdict'],
+            fetch: ['c_WorkdayTestCycle', 'LastVerdict'],
             callback: function(testCases, operation, success) {
-                that._calcTestStats(testCases);
+                that._calcTestStats(testCases, filters);
             }
         });
         return;
