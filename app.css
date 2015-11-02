@@ -13,3 +13,7 @@ tr.x-grid-row.complete > td {
 tr.x-grid-row.in_progress > td {
 	background-color: #FFFFBD;
 }
+
+#x-cmp-1009{
+	height: auto !important;
+}

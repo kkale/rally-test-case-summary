@@ -34,6 +34,44 @@ Ext.define('test-case-status', {
         this.statusGridPanel = this._createGridPanel('Test Case Status', this._statusDataStore);
         this.statusTotalsGridPanel = this._createGridPanel('Iteration Totals', this._statusTotalsDataStore);
 
+        this.pie_data = Ext.create('Ext.data.JsonStore', {
+            fields: ['name', 'data'],
+            data: [{ 'name': 'blank', 'data': 1}]
+        });
+
+        this.pie_chart = Ext.create('Ext.chart.Chart', {
+            renderTo: Ext.getBody(),
+            width: 500,
+            height: 350,
+            animate: true,
+            store: this.pie_data,
+            theme: 'Base:gradients',
+            series: [{
+                type: 'pie',
+                angleField: 'data',
+                showInLegend: true,
+                tips: {
+                    trackMouse: true,
+                    width: 140,
+                    height: 28,
+                  renderer: function(storeItem, item) {
+                    this.setTitle(storeItem.get('data') + '%');
+                  }
+                },
+                highlight: {
+                    segment: {
+                        margin: 20
+                    }
+                },
+                label: {
+                    field: 'name',
+                    display: 'rotate',
+                    contrast: true,
+                    font: '18px Arial'
+                }
+            }]
+        });
+
     },
 
     _createTableStore : function(storeName) {
@@ -75,6 +113,7 @@ Ext.define('test-case-status', {
 
         var that = this;
         that.all_tests = [];
+        that.pie_data.data = [];
         Ext.create('Rally.data.wsapi.Store', {
             model: 'UserStory',
             fetch: ['Name', 'TestCaseCount', 'TestCases'],
@@ -125,13 +164,20 @@ Ext.define('test-case-status', {
 
         // Percent
         this._statusDataStore.removeAll();
+        this.pie_data.removeAll();
         for (var key in dict) {
             percent = dict[key][0] / valid_count;
             dict[key][1] = Math.floor(percent * 10000) / 100;
+            //this.pie_data.add({'name': key, 'data': dict[key][1]});
             tableRowItem = this._getTableRowItem(key, dict[key][0], dict[key][1]);
             this._statusDataStore.add(tableRowItem);
         }
         this._refreshStatusTotalsTable(valid_count);
+        test_data = Ext.create('Ext.data.JsonStore', {
+            fields: ['name', 'data'],
+            data: [{ 'name': 'blank', 'data': 1}]
+        });
+        this.pie_chart.update(this.pie_data);
     },
 
     _refreshStatusTotalsTable : function(test_count) {
