@@ -55,7 +55,7 @@ Ext.define('test-case-status', {
                     width: 140,
                     height: 28,
                   renderer: function(storeItem, item) {
-                    this.setTitle(storeItem.get('data') + '%');
+                    this.setTitle(storeItem.get('name') + ": " + storeItem.get('data') + '%');
                   }
                 },
                 highlight: {
@@ -113,7 +113,7 @@ Ext.define('test-case-status', {
 
         var that = this;
         that.all_tests = [];
-        that.pie_data.data = [];
+        //that.pie_data.data = [];
         Ext.create('Rally.data.wsapi.Store', {
             model: 'UserStory',
             fetch: ['Name', 'TestCaseCount', 'TestCases'],
@@ -168,7 +168,7 @@ Ext.define('test-case-status', {
         for (var key in dict) {
             percent = dict[key][0] / valid_count;
             dict[key][1] = Math.floor(percent * 10000) / 100;
-            //this.pie_data.add({'name': key, 'data': dict[key][1]});
+            this.pie_data.add({'name': key, 'data': dict[key][1]});
             tableRowItem = this._getTableRowItem(key, dict[key][0], dict[key][1]);
             this._statusDataStore.add(tableRowItem);
         }
@@ -177,7 +177,6 @@ Ext.define('test-case-status', {
             fields: ['name', 'data'],
             data: [{ 'name': 'blank', 'data': 1}]
         });
-        this.pie_chart.update(this.pie_data);
     },
 
     _refreshStatusTotalsTable : function(test_count) {
