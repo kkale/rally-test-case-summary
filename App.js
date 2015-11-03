@@ -55,7 +55,7 @@ Ext.define('test-case-status', {
                     width: 140,
                     height: 28,
                   renderer: function(storeItem, item) {
-                    this.setTitle(storeItem.get('name') + ": " + storeItem.get('data') + '%');
+                    this.setTitle(storeItem.get('name') + ": " + Math.round(storeItem.get('data')) + '%');
                   }
                 },
                 highlight: {
